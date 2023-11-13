@@ -5,7 +5,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define PROMPT "simple_shell> "
+#define PROMPT "$ "
 
 void display_prompt(void)
 {
