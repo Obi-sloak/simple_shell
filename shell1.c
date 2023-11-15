@@ -5,70 +5,65 @@
 #include <string.h>
 
 #define BUFFER_SIZE 1024
-#define MAX_ARGS 64
 
-/**
- * main - Entry point for the simple shell
- *
- * Return: Always 0
- */
-int main(void)
-{
+int main(void) {
     char *buffer = NULL;
-    ssize_t read_bytes;
     size_t buffer_size = 0;
 
-    while ((read_bytes = getline(&buffer, &buffer_size, stdin)) != -1)
-    {
+    while (1) {
         
-        if (buffer[read_bytes - 1] == '\n')
+        write(STDOUT_FILENO, "$ ", 2);
+
+       
+        ssize_t read_bytes = getline(&buffer, &buffer_size, stdin);
+
+        
+        if (read_bytes == -1) {
+            if (feof(stdin)) {
+                write(STDOUT_FILENO, "\n", 1);
+                free(buffer);
+                exit(EXIT_SUCCESS);
+            }
+            perror("getline");
+            free(buffer);
+            exit(EXIT_FAILURE);
+        }
+
+        
+        if (buffer[read_bytes - 1] == '\n') {
             buffer[read_bytes - 1] = '\0';
+        }
 
         
         pid_t pid = fork();
 
-        if (pid == -1)
-        {
+        if (pid == -1) {
             perror("fork");
+            free(buffer);
             exit(EXIT_FAILURE);
-        }
-        else if (pid == 0) 
-        {
+        } else if (pid == 0) { 
             
-            char *args[MAX_ARGS];
-            char *token = strtok(buffer, " ");
-            int i = 0;
+            char *args[2];
+            args[0] = buffer;
+            args[1] = NULL;
 
-            while (token != NULL && i < MAX_ARGS - 1)
-            {
-                args[i++] = token;
-                token = strtok(NULL, " ");
-            }
-
-            args[i] = NULL;
-
-            
+          
             char *path = getenv("PATH");
             char *path_copy = strdup(path);
             char *dir = strtok(path_copy, ":");
 
-            while (dir != NULL)
-            {
+            while (dir != NULL) {
                 char executable_path[BUFFER_SIZE];
-                
-                char *exe_path_ptr = executable_path;
-                while ((*exe_path_ptr++ = *dir++))
-                    ;
-                exe_path_ptr[-1] = '/';
-                char *cmd_ptr = args[0];
-                while ((*exe_path_ptr++ = *cmd_ptr++))
-                    ;
+                strcpy(executable_path, dir);
+                strcat(executable_path, "/");
+                strcat(executable_path, args[0]);
 
-                
-                if (access(executable_path, X_OK) == 0)
-                {
-                    execve(executable_path, args, NULL);
-                    perror("execve");
+            
+                if (access(executable_path, X_OK) == 0) {
+                    execv(executable_path, args);
+                    perror("execv");
+                    free(path_copy);
+                    free(buffer);
                     exit(EXIT_FAILURE);
                 }
 
@@ -80,20 +75,14 @@ int main(void)
             write(STDERR_FILENO, args[0], strlen(args[0]));
             write(STDERR_FILENO, "\n", 1);
             free(path_copy);
+            free(buffer);
             exit(EXIT_FAILURE);
-        }
-        else 
-        {
-           
-            wait(NULL);
-
+        } else { 
             
-            if (isatty(STDIN_FILENO))
-                write(STDOUT_FILENO, "$ ", 2);
+            wait(NULL);
         }
     }
 
-    free(buffer);  
+    
     return 0;
 }
-
