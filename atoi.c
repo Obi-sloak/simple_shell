@@ -77,9 +77,9 @@ int main(void)
 
    info.readfd = 0;
    if (interactive(&info))
-   	printf("Shell is interactive\n");
+   	write(STDOUT_FILENO, "Shell is interactive\n", 21);
    else
-   	printf("Shell is not interactive\n");
+   	write(STDOUT_FILENO, "Shell is not interactive\n", 25);
 
    return (0);
 }
