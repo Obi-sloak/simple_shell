@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+extern char **environ;
 
 #define BUFFER_SIZE 1024
 
@@ -17,7 +18,7 @@ int main(void) {
        
         ssize_t read_bytes = getline(&buffer, &buffer_size, stdin);
 
-        
+       
         if (read_bytes == -1) {
             if (feof(stdin)) {
                 write(STDOUT_FILENO, "\n", 1);
@@ -47,7 +48,7 @@ int main(void) {
             args[0] = buffer;
             args[1] = NULL;
 
-          
+         
             char *path = getenv("PATH");
             char *path_copy = strdup(path);
             char *dir = strtok(path_copy, ":");
@@ -58,10 +59,10 @@ int main(void) {
                 strcat(executable_path, "/");
                 strcat(executable_path, args[0]);
 
-            
+                
                 if (access(executable_path, X_OK) == 0) {
-                    execv(executable_path, args);
-                    perror("execv");
+                    execve(executable_path, args, environ);
+                    perror("execve");
                     free(path_copy);
                     free(buffer);
                     exit(EXIT_FAILURE);
